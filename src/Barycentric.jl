@@ -1,5 +1,3 @@
-VERSION >= v"0.4.0" && __precompile__(true)
-
 """
 Barycentric
 ===========
@@ -9,7 +7,7 @@ equispaced points and Chebyshev points of the first and second kind. The
 formulae used are taken from the paper of Berrut and Trefethen, SIAM Review,
 2004.
 
-Written by David A.W. Barton (david.barton@bristol.ac.uk) 2016 and licensed
+Written by David A.W. Barton (david.barton@bristol.ac.uk) 2016-2018 and licensed
 under the MIT license <https://opensource.org/licenses/MIT>
 """
 module Barycentric
@@ -30,7 +28,7 @@ Return an array of equispaced points with n intervals. For example
 """
 function points_equispaced(n::Integer, numtype=Float64)
     # For completeness only
-    linspace(-one(numtype), one(numtype), n+1)
+    range(-one(numtype), stop=one(numtype), length=n+1)
 end
 
 """
@@ -40,7 +38,7 @@ Return an array of Chebyshev points of the first kind. For example
 `x = points_chebyshev1(10)`
 """
 function points_chebyshev1(n::Integer, numtype=Float64)
-    cos([numtype(2j + 1)*π/(2n + 2) for j = 0:n])
+    cos.([numtype(2j + 1)*π/(2n + 2) for j = 0:n])
 end
 
 """
@@ -50,7 +48,7 @@ Return an array of Chebyshev points of the second kind. For example
 `x = points_chebyshev2(10)`
 """
 function points_chebyshev2(n::Integer, numtype=Float64)
-    cos([numtype(j)*π/n for j = 0:n])
+    cos.([numtype(j)*π/n for j = 0:n])
 end
 
 """
@@ -59,8 +57,9 @@ $(SIGNATURES)
 Return the Barycentric weights for arbitrary points. For example
 `w = weights(linspace(0, 1, 11))`
 """
-function weights{T <: Real}(x::AbstractVector{T})
-    w = ones(x)
+function weights(x::AbstractVector{T}) where {T <: AbstractFloat}
+    w = similar(x)
+    fill!(w, one(T))
     nx = length(x)
     for i ∈ eachindex(w, x)
         x_i = x[i]
@@ -71,7 +70,7 @@ function weights{T <: Real}(x::AbstractVector{T})
             w[i] *= x_i - x[j]
         end
     end
-    1./w
+    1 ./ w
 end
 
 """
@@ -99,7 +98,7 @@ example `w = weights_chebyshev1(10)`
 """
 function weights_chebyshev1(n::Integer, numtype=Float64)
     # Eq. (5.3)
-    w = [sin(numtype(2j + 1)*π/(2n + 2)) for j = 0:n]
+    w = [sin.(numtype(2j + 1)*π/(2n + 2)) for j = 0:n]
     w[2:2:end] .= -w[2:2:end]
     return w
 end
@@ -132,11 +131,11 @@ Barycentric weights w. For example :
 
 Now ynew ≈ `P*y` for some vector y.
 """
-function interpolation_matrix{T <: Real}(xnew::AbstractVector{T}, x::AbstractVector{T}, w::AbstractVector{T})
+function interpolation_matrix(xnew::AbstractVector{T}, x::AbstractVector{T}, w::AbstractVector{T}) where {T <: AbstractFloat}
     # Eq. (4.2)
     xdiff = xnew .- x'
     M = w' ./ xdiff
-    Msum = sum(M, 2)
+    Msum = sum(M, dims=2)
     for i ∈ 1:size(M, 2)
         for j ∈ 1:size(M, 1)
             if Msum[j] == 0
@@ -163,7 +162,7 @@ points xnew using the Barycentric weights w. For example :
     xnew = points_equispaced(5)
     ynew = interpolate(xnew, x, y, w)
 """
-function interpolate{T <: Real}(xnew::AbstractVector{T}, x::AbstractVector{T}, y::AbstractVector{T}, w::AbstractVector{T})
+function interpolate(xnew::AbstractVector{T}, x::AbstractVector{T}, y::AbstractVector{T}, w::AbstractVector{T}) where {T <: AbstractFloat}
     return interpolation_matrix(xnew, x, w)*y
 end
 
@@ -179,7 +178,7 @@ w. For example :
 
 Now dy/dx ≈ `D*y` for some vector y.
 """
-function differentiation_matrix{T <: Real}(x::AbstractVector{T}, w::AbstractVector{T})
+function differentiation_matrix(x::AbstractVector{T}, w::AbstractVector{T}) where {T <: AbstractFloat}
     # Eqs. (9.4) and (9.5)
     nx = length(x)
     D = (w' ./ w) ./ (x .- x')
