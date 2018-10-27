@@ -124,7 +124,7 @@ end
 """
     interpolate(poly::AbstractPolynomial, y₀, [x])
 
-Return the value of `y(x)` given that `y(nodes(poly)) = y₀.` If the value of `x`
+Return the value of `y(x)` given that `y(nodes(poly)) = y₀`. If the value of `x`
 is not provided, return a function `y(x)` that evaluates the interpolant at any
 `x`.
 """
@@ -153,5 +153,36 @@ end
 interpolate(poly::AbstractPolynomial{N, T}, y₀::AbstractVector{<: Number}) where {N, T} = x -> interpolate(poly, y₀, x)
 interpolate(poly::AbstractPolynomial{N, T}, y₀::AbstractVector{<: Number}, x::AbstractVector{<: Number}) where {N, T} = [interpolate(poly, y₀, xᵢ) for xᵢ in x]
 
+"""
+    differentiation_matrix(poly::AbstractPolynomial)
+
+Return the differentiation matrix at the nodes of the polynomial specified.
+
+    P = Chebyshev2{5}()
+    D = differentiation_matrix(P)
+
+Now dy/dx ≈ `D*y` at the nodes of the polynomial.
+"""
+function differentiation_matrix(poly::AbstractPolynomial{N, T}) where {N, T}
+    # Eqs. (9.4) and (9.5)
+    w = weights(poly)
+    x = nodes(poly)
+    D = Matrix(undef, N+1, N+1)
+    for i = Base.OneTo(N+1)
+        Dsum = zero(T)
+        for j = Base.OneTo(i-1)
+            temp = (w[i] / w[j]) / (x[j] - x[i])
+            D[i, j] = temp
+            Dsum += temp
+        end
+        for j = i+1:N+1
+            temp = (w[i] / w[j]) / (x[j] - x[i])
+            D[i, j] = temp
+            Dsum += temp
+        end
+        D[i, i] = -Dsum
+    end
+    return D
+end
 
 end
