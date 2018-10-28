@@ -14,24 +14,25 @@ under the MIT license <https://opensource.org/licenses/MIT>
 """
 module Barycentric
 
-export Chebyshev1, Chebyshev2, Equispaced, weights, nodes, interpolate, interpolation_matrix
+export Chebyshev1, Chebyshev2, Equispaced, ArbitraryPolynomial,
+    weights, nodes, interpolate, interpolation_matrix, differentiation_matrix
 
 #-- Node distributions
 
-abstract type AbstractPolynomial{N, T <: AbstractFloat} end
+abstract type AbstractPolynomial{N, T <: Number} end
 
 for name in [:Chebyshev1, :Chebyshev2, :Equispaced]
-    @eval struct $name{N, T <: AbstractFloat} <: AbstractPolynomial{N, T}
+    @eval struct $name{N, T <: Number} <: AbstractPolynomial{N, T}
         shift::T
         scale::T
         nodes::Vector{T}
         weights::Vector{T}
-        function $name{N, T}(start::T, stop::T) where {N, T <: AbstractFloat}
+        function $name{N, T}(start::T, stop::T) where {N, T <: Number}
             _shift = (stop + start)/2
             _scale = (stop - start)/2
             _nodes = nodes($name{N, T}, _shift, _scale)
-            _weights = weights($name{N, T}, _scale)
-            new{N, T, typeof(_nodes), typeof(_weights)}(_shift, _scale, _nodes, _weights)
+            _weights = weights($name{N, T})
+            new{N, T}(_shift, _scale, _nodes, _weights)
         end
     end
     @eval $name{N, T}(start=-1, stop=1) where {N, T} = $name{N, T}(convert(T, start), convert(T, stop))
@@ -40,6 +41,17 @@ for name in [:Chebyshev1, :Chebyshev2, :Equispaced]
     @eval (poly::$name)(y, x) = interpolate(poly, y, x)
 end
 
+struct ArbitraryPolynomial{N, T <: Number} <: AbstractPolynomial{N, T}
+    nodes::Vector{T}
+    weights::Vector{T}
+    function ArbitraryPolynomial(nodes::Vector{T}) where T <: Number
+        N = length(nodes)-1
+        new{N, T}(nodes, weights(ArbitraryPolynomial{N, T}, nodes))
+    end
+end
+(poly::ArbitraryPolynomial)(y) = interpolate(poly, y)
+(poly::ArbitraryPolynomial)(y, x) = interpolate(poly, y, x)
+
 """
     weights(poly)
 
@@ -47,7 +59,7 @@ Return the Barycentric weights for the specified orthogonal polynomials.
 """
 function weights end
 
-weights(poly::Type{<: AbstractPolynomial{N}}, scale) where N = [scale*_weight(poly, j) for j = 0:N]
+weights(poly::Type{<: AbstractPolynomial{N}}) where N = [_weight(poly, j) for j = 0:N]
 
 # Eq. (5.1)
 @inline _weight(poly::Type{<: Equispaced{N, T}}, j::Integer) where {N, T} = T((2*xor(isodd(N), iseven(j))-1)*binomial(N, j))
@@ -58,6 +70,22 @@ weights(poly::Type{<: AbstractPolynomial{N}}, scale) where N = [scale*_weight(po
 # Eq. (5.4)
 @inline _weight(poly::Type{<: Chebyshev2{N, T}}, j::Integer) where {N, T} = -T((1.0 - 0.5*((j == 0) || (j == N)))*(2*iseven(j) - 1))
 
+function weights(poly::Type{<: ArbitraryPolynomial{N, T}}, x::AbstractVector{T}) where {N, T}
+    w = similar(x)
+    for i = eachindex(w)
+        xᵢ = x[i]
+        wᵢ = one(T)
+        for j = 1:i-1
+            wᵢ *= xᵢ - x[j]
+        end
+        for j = i+1:N+1
+            wᵢ *= xᵢ - x[j]
+        end
+        w[i] = 1/wᵢ
+    end
+    return w
+end
+
 weights(poly::AbstractPolynomial) = poly.weights
 
 """
@@ -67,9 +95,9 @@ Return the nodes for the specified orthogonal polynomials.
 """
 function nodes end
 
-nodes(poly::Type{<: AbstractPolynomial{N}}, shift, scale) where N = [_node(poly, j)*scale + shift for j = 0:N]
+nodes(poly::Type{<: AbstractPolynomial{N}}, shift::Number, scale::Number) where N = [_node(poly, j)*scale + shift for j = 0:N]
 
-nodes(poly::Type{<: Equispaced{N}}, shift, scale) where N = range(shift - scale, stop=shift + scale, length=N+1)
+nodes(poly::Type{<: Equispaced{N}}, shift::Number, scale::Number) where N = range(shift - scale, stop=shift + scale, length=N+1)
 
 @inline _node(poly::Type{<: Chebyshev1{N, T}}, j::Integer) where {N, T} = -cospi(T(2j + 1)/(2N + 2))
 
@@ -167,16 +195,16 @@ function differentiation_matrix(poly::AbstractPolynomial{N, T}) where {N, T}
     # Eqs. (9.4) and (9.5)
     w = weights(poly)
     x = nodes(poly)
-    D = Matrix(undef, N+1, N+1)
+    D = Matrix{T}(undef, N+1, N+1)
     for i = Base.OneTo(N+1)
         Dsum = zero(T)
         for j = Base.OneTo(i-1)
-            temp = (w[i] / w[j]) / (x[j] - x[i])
+            temp = (w[j] / w[i]) / (x[i] - x[j])
             D[i, j] = temp
             Dsum += temp
         end
         for j = i+1:N+1
-            temp = (w[i] / w[j]) / (x[j] - x[i])
+            temp = (w[j] / w[i]) / (x[i] - x[j])
             D[i, j] = temp
             Dsum += temp
         end
