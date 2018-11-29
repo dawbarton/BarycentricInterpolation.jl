@@ -17,6 +17,11 @@ x6 = [0.278498218867048,0.825379738072032,1.78288657350633,2.74777510870561,2.90
 arb₅ = ArbitraryPolynomial(x5)
 arb₆ = ArbitraryPolynomial(x6)
 
+@testset "Degree" begin
+    @test degree(equi₅) == 5
+    @test degree(equi₆) == 6
+end
+
 @testset "Nodes" begin
     @test nodes(equi₅) ≈ [-1,-0.6,-0.2,0.2,0.6,1]
     @test nodes(equi₆) ≈ [-1,-0.666666666666667,-0.333333333333333,0,0.333333333333333,0.666666666666667,1]
