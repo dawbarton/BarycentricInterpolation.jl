@@ -15,7 +15,7 @@ under the MIT license <https://opensource.org/licenses/MIT>
 module Barycentric
 
 export Chebyshev1, Chebyshev2, Equispaced, ArbitraryPolynomial,
-    weights, nodes, interpolate, interpolation_matrix, differentiation_matrix
+    weights, nodes, interpolate, interpolation_matrix, differentiation_matrix, degree
 
 #-- Node distributions
 
@@ -51,6 +51,14 @@ struct ArbitraryPolynomial{N, T <: Number} <: AbstractPolynomial{N, T}
 end
 (poly::ArbitraryPolynomial)(y) = interpolate(poly, y)
 (poly::ArbitraryPolynomial)(y, x) = interpolate(poly, y, x)
+
+
+"""
+    degree(poly)
+
+Return the degree of the polynomial specified.
+"""
+degree(poly::AbstractPolynomial{N}) where N = N
 
 """
     weights(poly)
