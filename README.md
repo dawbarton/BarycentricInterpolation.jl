@@ -54,7 +54,7 @@ Finally, the derivative of the polynomial at the nodes can be obtained using
 a matrix which can be multiplied by a vector of `y` values to calculate the
 derivative of `y`.
 
-## Example
+## Simple example
 
 ```julia
 using Barycentric
@@ -67,6 +67,12 @@ println(interpolate(p, y, x_new) ≈ sinpi(x_new))       # hopefully true!
 D = differentiation_matrix(p)  # get the differentiation matrix
 println(interpolate(p, D*y, x_new) ≈ pi*cospi(x_new))  # hopefully true!
 ```
+
+## More complicated example
+
+For an example with Barycentric.jl applied to the simulation of a PDE (in
+combination with DifferentialEquations.jl) see
+[http://www.cityinthesky.co.uk/2018/12/barycentric-jl/].
 
 ## License
 
