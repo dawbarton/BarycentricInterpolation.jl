@@ -1,5 +1,8 @@
 # Barycentric
 
+![Lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)
+[![Build Status](https://travis-ci.com/dawbarton/Barycentric.jl.svg?branch=master)](https://travis-ci.com/dawbarton/Barycentric.jl)
+
 This Julia package implements the Barycentric formula for polynomial
 interpolation on equispaced points and Chebyshev points of the first and second
 kind. The formulae used are taken from the paper of Berrut and Trefethen, SIAM
