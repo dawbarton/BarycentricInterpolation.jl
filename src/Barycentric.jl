@@ -103,6 +103,8 @@ Return the nodes for the specified orthogonal polynomials.
 """
 function nodes end
 
+nodes(poly::Type{<: AbstractPolynomial{N, T}}) where {N, T} = nodes(poly, zero(T), one(T))
+
 nodes(poly::Type{<: AbstractPolynomial{N}}, shift::Number, scale::Number) where N = [_node(poly, j)*scale + shift for j = 0:N]
 
 nodes(poly::Type{<: Equispaced{N}}, shift::Number, scale::Number) where N = range(shift - scale, stop=shift + scale, length=N+1)

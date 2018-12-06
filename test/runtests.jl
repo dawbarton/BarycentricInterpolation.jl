@@ -34,6 +34,9 @@ end
 
     @test nodes(arb₅) ≈ x5
     @test nodes(arb₆) ≈ x6
+
+    @test nodes(Equispaced{5, Float64}) ≈ range(-1, stop=1, length=6)
+    @test collect(nodes(Equispaced{5, Float32})) isa Vector{Float32}
 end
 
 @testset "Weights" begin
@@ -48,6 +51,8 @@ end
 
     @test weights(arb₅) ≈ [-0.079601734468871,2.82206348049722,-3.28654127480991,1.17155138701322,-2.4317744194857,1.80430256125404]
     @test weights(arb₆) ≈ [0.0114361913589559,-0.0390633084690722,0.100394094241955,-0.588770483980979,0.552871013562898,-0.0415349717143145,0.00466746500055649]
+
+    @test collect(weights(Chebyshev2{5, Float32})) isa Vector{Float32}
 end
 
 xnew = [-0.514624351277159,0.285656117611641,0.427542456238857,0.849303738865132] # randomly generated
