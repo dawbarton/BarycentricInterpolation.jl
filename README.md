@@ -1,7 +1,7 @@
-# Barycentric
+# BarycentricInterpolation
 
 ![Lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)
-[![Build Status](https://travis-ci.com/dawbarton/Barycentric.jl.svg?branch=master)](https://travis-ci.com/dawbarton/Barycentric.jl)
+[![Build Status](https://travis-ci.com/dawbarton/BarycentricInterpolation.jl.svg?branch=master)](https://travis-ci.com/dawbarton/BarycentricInterpolation.jl)
 
 This Julia package implements the Barycentric formula for polynomial
 interpolation on equispaced points and Chebyshev points of the first and second
@@ -60,7 +60,7 @@ derivative of `y`.
 ## Simple example
 
 ```julia
-using Barycentric
+using BarycentricInterpolation
 
 p = Chebyshev2{20}()           # create a Chebyshev type 2 polynomial of order 20
 x = nodes(p)                   # get the nodes

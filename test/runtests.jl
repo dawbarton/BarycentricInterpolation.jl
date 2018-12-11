@@ -1,4 +1,4 @@
-using Barycentric
+using BarycentricInterpolation
 using LinearAlgebra
 using Test
 

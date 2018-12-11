@@ -1,6 +1,6 @@
 """
-Barycentric
-===========
+BarycentricInterpolation
+========================
 
 This package implements the Barycentric formula for polynomial interpolation on
 equispaced points and Chebyshev points of the first and second kind. The
@@ -12,7 +12,7 @@ Other packages that may be of interest are FastGaussQuadrature and ApproxFun.
 Written by David A.W. Barton (david.barton@bristol.ac.uk) 2016-2018 and licensed
 under the MIT license <https://opensource.org/licenses/MIT>
 """
-module Barycentric
+module BarycentricInterpolation
 
 export Chebyshev1, Chebyshev2, Equispaced, ArbitraryPolynomial,
     weights, nodes, interpolate, interpolation_matrix, differentiation_matrix, degree
