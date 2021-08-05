@@ -75,7 +75,7 @@ println(interpolate(p, D*y, x_new) ≈ pi*cospi(x_new))  # hopefully true!
 
 For an example with Barycentric.jl applied to the simulation of a PDE (in
 combination with DifferentialEquations.jl) see
-[http://www.cityinthesky.co.uk/2018/12/barycentric-jl/].
+[https://cityinthesky.co.uk/posts/2018/barycentricinterpolation.jl/].
 
 ## License
 
