@@ -82,5 +82,5 @@ combination with DifferentialEquations.jl) see
 
 ## License
 
-Written by David A.W. Barton (david.barton@bristol.ac.uk) 2016-2018 and released
+Written by David A.W. Barton (david.barton@bristol.ac.uk) 2016-2021 and released
 under the MIT license <https://opensource.org/licenses/MIT>.

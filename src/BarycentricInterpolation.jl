@@ -7,31 +7,36 @@ equispaced points and Chebyshev points of the first and second kind. The
 formulae used are taken from the paper of Berrut and Trefethen, SIAM Review,
 2004.
 
+Additional Barycentric weights for Legendre points are taken from the paper of Wang,
+Huybrechs, and Vandewalle, Mathematics of Computation, 83 (290) 2893-2914, 2014.
+
 Other packages that may be of interest are FastGaussQuadrature and ApproxFun.
 
-Written by David A.W. Barton (david.barton@bristol.ac.uk) 2016-2018 and licensed
+Written by David A.W. Barton (david.barton@bristol.ac.uk) 2016-2021 and licensed
 under the MIT license <https://opensource.org/licenses/MIT>
 """
 module BarycentricInterpolation
 
-export Chebyshev1, Chebyshev2, Equispaced, ArbitraryPolynomial,
-    weights, nodes, interpolate, interpolation_matrix, differentiation_matrix, degree
+using FastGaussQuadrature: gausslegendre
+
+export Chebyshev1, Chebyshev2, Legendre, Equispaced, ArbitraryPolynomial
+
+export weights, nodes, interpolate, interpolation_matrix, differentiation_matrix, degree
 
 #-- Node distributions
 
 abstract type AbstractPolynomial{N, T <: Number} end
 
-for name in [:Chebyshev1, :Chebyshev2, :Equispaced]
+for name in [:Chebyshev1, :Chebyshev2, :Legendre, :Equispaced]
     @eval struct $name{N, T <: Number} <: AbstractPolynomial{N, T}
         shift::T
         scale::T
         nodes::Vector{T}
         weights::Vector{T}
         function $name{N, T}(start::T, stop::T) where {N, T <: Number}
-            _shift = (stop + start)/2
-            _scale = (stop - start)/2
-            _nodes = nodes($name{N, T}, _shift, _scale)
-            _weights = weights($name{N, T})
+            _shift = T(stop + start)/2
+            _scale = T(stop - start)/2
+            (_nodes, _weights) = nodes_weights($name{N, T}, _shift, _scale)
             new{N, T}(_shift, _scale, _nodes, _weights)
         end
     end
@@ -52,13 +57,30 @@ end
 (poly::ArbitraryPolynomial)(y) = interpolate(poly, y)
 (poly::ArbitraryPolynomial)(y, x) = interpolate(poly, y, x)
 
-
 """
     degree(poly)
 
 Return the degree of the polynomial specified.
 """
 degree(poly::AbstractPolynomial{N}) where N = N
+
+"""
+    nodes_weights(poly)
+
+Return the nodes and weights of the polynomial specified.
+"""
+function nodes_weights(poly::Type{<:AbstractPolynomial}, shift=0, scale=1)
+    return (nodes(poly, shift, scale), weights(poly))
+end
+
+nodes_weights(poly::AbstractPolynomial) = (poly.nodes, poly.weights)
+
+function nodes_weights(::Type{<:Legendre{N, Float64}}, shift=0, scale=1) where N
+    (x, w) = gausslegendre(N+1)
+    _nodes = [xᵢ * scale + shift for xᵢ in x]
+    _weights = [(2*isodd(i)-1)*sqrt((1-x[i]^2)*w[i]) for i in eachindex(x)]
+    return (_nodes, _weights)
+end
 
 """
     weights(poly)
@@ -93,6 +115,8 @@ function weights(poly::Type{<: ArbitraryPolynomial{N, T}}, x::AbstractVector{T})
     end
     return w
 end
+
+function weights(poly::Type{<:Legendre}, x::AbstractVector{T}) where T end
 
 weights(poly::AbstractPolynomial) = poly.weights
 
@@ -223,4 +247,4 @@ function differentiation_matrix(poly::AbstractPolynomial{N, T}) where {N, T}
     return D
 end
 
-end
+end  # module
