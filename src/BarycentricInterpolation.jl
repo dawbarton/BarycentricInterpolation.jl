@@ -116,8 +116,6 @@ function weights(poly::Type{<: ArbitraryPolynomial{N, T}}, x::AbstractVector{T})
     return w
 end
 
-function weights(poly::Type{<:Legendre}, x::AbstractVector{T}) where T end
-
 weights(poly::AbstractPolynomial) = poly.weights
 
 """
