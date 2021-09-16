@@ -31,7 +31,9 @@ nodes (zeros).
   \[0, N\].
 * Chebyshev type 2 (`Chebyshev2{N}()`) — nodes distributed according to
   cos(πj/N) where N is the degree of the polynomial, for j in \[0, N\].
-* Arbitrary nodes (`ArbitraryPolynomial(nodes)`) — nodes distributed as 
+* Legendre (`Legendre{N}()`) — nodes distributed according to the zeros of the
+  corresponding Legendre polynomial where N is the degree of the polynomial.
+* Arbitrary nodes (`ArbitraryPolynomial(nodes)`) — nodes distributed as
   specified.
 
 By default, each of the polynomials are defined over the range \[-1, +1\].
@@ -78,7 +80,7 @@ println(interpolate(p, D*y, x_new) ≈ pi*cospi(x_new))  # hopefully true!
 
 For an example with Barycentric.jl applied to the simulation of a PDE (in
 combination with DifferentialEquations.jl) see
-[https://cityinthesky.co.uk/posts/2018/barycentricinterpolation.jl/].
+<https://cityinthesky.co.uk/posts/2018/barycentricinterpolation.jl/>.
 
 ## License
 
