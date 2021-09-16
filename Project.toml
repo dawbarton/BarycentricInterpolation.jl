@@ -1,5 +1,5 @@
 name = "BarycentricInterpolation"
-uuid = "e9d15388-4623-4d1e-9e26-4fb9a6fc2205"
+uuid = "9eb6a62d-0ffa-5353-839e-400c605afeda"
 authors = ["David AW Barton <david.barton@bristol.ac.uk>"]
 version = "0.1.3"
 
