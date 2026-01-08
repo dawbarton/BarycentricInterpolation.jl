@@ -1,7 +1,7 @@
 name = "BarycentricInterpolation"
 uuid = "9eb6a62d-0ffa-5353-839e-400c605afeda"
 authors = ["David AW Barton <david.barton@bristol.ac.uk>"]
-version = "0.1.3"
+version = "0.1.4"
 
 [deps]
 FastGaussQuadrature = "442a2c76-b920-505d-bb47-c5924d526838"
