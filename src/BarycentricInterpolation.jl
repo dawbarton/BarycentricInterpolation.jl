@@ -25,33 +25,43 @@ export weights, nodes, interpolate, interpolation_matrix, differentiation_matrix
 
 #-- Node distributions
 
-abstract type AbstractPolynomial{N, T <: Number} end
+abstract type AbstractPolynomial{T <:Number} end
 
 for name in [:Chebyshev1, :Chebyshev2, :Legendre, :Equispaced]
-    @eval struct $name{N, T <: Number} <: AbstractPolynomial{N, T}
+    @eval struct $name{T<:Number, X<:AbstractVector{T}, W<:AbstractVector} <:AbstractPolynomial{T}
         shift::T
         scale::T
-        nodes::Vector{T}
-        weights::Vector{T}
-        function $name{N, T}(start::T, stop::T) where {N, T <: Number}
-            _shift = T(stop + start)/2
-            _scale = T(stop - start)/2
-            (_nodes, _weights) = nodes_weights($name{N, T}, _shift, _scale)
-            new{N, T}(_shift, _scale, _nodes, _weights)
+        nodes::X
+        weights::W
+        function $name{T, X, W}(shift::T, scale::T, nodes::X, weights::W) where {T<:Number, X<:AbstractVector{T}, W<:AbstractVector}
+            length(nodes) == length(weights) || throw(DimensionMismatch("nodes and weights have different lengths"))
+            new{T, X, W}(shift, scale, nodes, weights)
         end
     end
-    @eval $name{N, T}(start=-1, stop=1) where {N, T} = $name{N, T}(convert(T, start), convert(T, stop))
-    @eval $name{N}(start=-1, stop=1) where N = $name{N, Float64}(convert(Float64, start), convert(Float64, stop))
+    @eval function $name{T}(N::Integer, start::T, stop::T) where {T <:Number}
+        shift = T(stop + start)/2
+        scale = T(stop - start)/2
+        (nodes, weights) = nodes_weights($name{T}, Int(N), shift, scale)
+        @assert N+1 == length(nodes)
+        $name{T, typeof(nodes), typeof(weights)}(shift, scale, nodes, weights)
+    end
+    @eval $name{T}(N::Integer, start::Number, stop::Number) where {T} = $name{T}(N, convert(T, start), convert(T, stop))
+    @eval function $name(N::Integer, start::Number, stop::Number)
+        start, stop = float.(promote(start, stop))
+        $name{typeof(start)}(N, start, stop)
+    end
+    @eval $name(N::Integer) = $name(N, -1, 1)
+    @eval $name{T}(N::Integer) where {T} = $name(N, T(-1), T(1))
     @eval (poly::$name)(y) = interpolate(poly, y)
     @eval (poly::$name)(y, x) = interpolate(poly, y, x)
 end
 
-struct ArbitraryPolynomial{N, T <: Number} <: AbstractPolynomial{N, T}
-    nodes::Vector{T}
-    weights::Vector{T}
-    function ArbitraryPolynomial(nodes::Vector{T}) where T <: Number
-        N = length(nodes)-1
-        new{N, T}(nodes, weights(ArbitraryPolynomial{N, T}, nodes))
+struct ArbitraryPolynomial{T<:Number, X<:AbstractVector{T}, W<:AbstractVector} <:AbstractPolynomial{T}
+    nodes::X
+    weights::W
+    function ArbitraryPolynomial(nodes::AbstractVector{T}) where {T<:Number}
+        _weights = weights(ArbitraryPolynomial{T}, nodes)
+        new{T, typeof(nodes), typeof(_weights)}(nodes, _weights)
     end
 end
 (poly::ArbitraryPolynomial)(y) = interpolate(poly, y)
@@ -62,78 +72,90 @@ end
 
 Return the degree of the polynomial specified.
 """
-degree(poly::AbstractPolynomial{N}) where N = N
+degree(poly::AbstractPolynomial) = length(poly.nodes)-1 # assumes every poly has a nodes field
 
 """
     nodes_weights(poly)
 
 Return the nodes and weights of the polynomial specified.
 """
-function nodes_weights(poly::Type{<:AbstractPolynomial}, shift=0, scale=1)
-    return (nodes(poly, shift, scale), weights(poly))
+function nodes_weights(poly::Type{<:AbstractPolynomial}, N::Integer, shift=0, scale=1)
+    return (nodes(poly, N, shift, scale), weights(poly, N))
 end
 
 nodes_weights(poly::AbstractPolynomial) = (poly.nodes, poly.weights)
 
-function nodes_weights(::Type{<:Legendre{N, Float64}}, shift=0, scale=1) where N
-    (x, w) = gausslegendre(N+1)
-    _nodes = [xᵢ * scale + shift for xᵢ in x]
-    _weights = [(2*isodd(i)-1)*sqrt((1-x[i]^2)*w[i]) for i in eachindex(x)]
-    return (_nodes, _weights)
+function nodes_weights(::Type{<:Legendre{T}}, N::Integer, shift=0, scale=1) where {T}
+    if precision(Float64) < precision(T)
+        # to do: BigFloat Legendre points are implemented in QuadGK.jl
+        error("high-precision $T Legendre support is unimplemented")
+    end
+    (x, w) = gausslegendre(N+1) # computes in Float64 precision
+    nodes = map(xᵢ -> T(xᵢ * scale + shift), x)
+    weights = map(i -> (2*isodd(i)-1)*sqrt((1-x[i]^2)*w[i]), eachindex(x))
+    return (nodes, weights)
 end
 
 """
     weights(poly)
+    weights(polytype, N)
 
-Return the Barycentric weights for the specified orthogonal polynomials.
+Return the Barycentric weights for the specified orthogonal polynomials.  If
+an `AbstractPolynomial` type is passed, one must also pass the degree `N``.
 """
 function weights end
 
-weights(poly::Type{<: AbstractPolynomial{N}}) where N = [_weight(poly, j) for j = 0:N]
+function weights(poly::Type{<:AbstractPolynomial}, N::Integer)
+    _N = Int(N)
+    return [_weight(poly, _N, j) for j = 0:_N]
+end
 
 # Eq. (5.1)
-@inline _weight(poly::Type{<: Equispaced{N, T}}, j::Integer) where {N, T} = T((2*xor(isodd(N), iseven(j))-1)*binomial(N, j))
+@inline _weight(poly::Type{<:Equispaced{T}}, N::Integer, j::Integer) where {T} = T((2*xor(isodd(N), iseven(j))-1)*binomial(N, j))
 
 # Eq. (5.3)
-@inline _weight(poly::Type{<: Chebyshev1{N, T}}, j::Integer) where {N, T} = -(2*iseven(j)-1)*sinpi(T(2j + 1)/(2N + 2))
+@inline _weight(poly::Type{<:Chebyshev1{T}}, N::Integer, j::Integer) where {T} = -(2*iseven(j)-1)*sinpi(T(2j + 1)/(2N + 2))
 
 # Eq. (5.4)
-@inline _weight(poly::Type{<: Chebyshev2{N, T}}, j::Integer) where {N, T} = -T((1.0 - 0.5*((j == 0) || (j == N)))*(2*iseven(j) - 1))
+@inline _weight(poly::Type{<:Chebyshev2{T}}, N::Integer, j::Integer) where {T} = -T((1.0 - 0.5*((j == 0) || (j == N)))*(2*iseven(j) - 1))
 
-function weights(poly::Type{<: ArbitraryPolynomial{N, T}}, x::AbstractVector{T}) where {N, T}
-    w = similar(x)
-    for i = eachindex(w)
+function weights(poly::Type{<:ArbitraryPolynomial{T}}, x::AbstractVector{T}) where {T}
+    return map(eachindex(x)) do i
         xᵢ = x[i]
         wᵢ = one(T)
-        for j = 1:i-1
+        for j = firstindex(x):i-1
             wᵢ *= xᵢ - x[j]
         end
-        for j = i+1:N+1
+        for j = i+1:lastindex(x)
             wᵢ *= xᵢ - x[j]
         end
-        w[i] = 1/wᵢ
+        inv(wᵢ)
     end
-    return w
 end
 
 weights(poly::AbstractPolynomial) = poly.weights
 
 """
     nodes(poly)
+    nodes(polytype, N)
 
-Return the nodes for the specified orthogonal polynomials.
+Return the nodes for the specified orthogonal polynomials.   If
+an `AbstractPolynomial` type is passed, one must also pass the degree `N``.
 """
 function nodes end
 
-nodes(poly::Type{<: AbstractPolynomial{N, T}}) where {N, T} = nodes(poly, zero(T), one(T))
+nodes(poly::Type{<:AbstractPolynomial{T}}, N::Integer) where {T} = nodes(poly, N, zero(T), one(T))
 
-nodes(poly::Type{<: AbstractPolynomial{N}}, shift::Number, scale::Number) where N = [_node(poly, j)*scale + shift for j = 0:N]
+function nodes(poly::Type{<:AbstractPolynomial}, N::Integer, shift::Number, scale::Number)
+    _N = Int(N)
+    return [_node(poly, _N, j)*scale + shift for j = 0:_N]
+end
 
-nodes(poly::Type{<: Equispaced{N}}, shift::Number, scale::Number) where N = range(shift - scale, stop=shift + scale, length=N+1)
+nodes(poly::Type{<:Equispaced}, N::Integer, shift::Number, scale::Number) = range(shift - scale, stop=shift + scale, length=Int(N)+1)
 
-@inline _node(poly::Type{<: Chebyshev1{N, T}}, j::Integer) where {N, T} = -cospi(T(2j + 1)/(2N + 2))
+@inline _node(poly::Type{<:Chebyshev1{T}}, N::Integer, j::Integer) where {T} = -cospi(T(2j + 1)/(2N + 2))
 
-@inline _node(poly::Type{<: Chebyshev2{N, T}}, j::Integer) where {N, T} = -cospi(T(j)/N)
+@inline _node(poly::Type{<:Chebyshev2{T}}, N::Integer, j::Integer) where {T} = -cospi(T(j)/N)
 
 nodes(poly::AbstractPolynomial) = poly.nodes
 
@@ -149,9 +171,10 @@ For example :
 
 Now `y(x) ≈ M*y₀` given that `y(nodes(poly)) = y₀.
 """
-function interpolation_matrix(poly::AbstractPolynomial{N, T}, x::Union{Number, AbstractVector}) where {N, T}
+function interpolation_matrix(poly::AbstractPolynomial{T}, x::Union{Number, AbstractVector}) where {T}
     w = weights(poly)
     x₀ = nodes(poly)
+    N = degree(poly)
     M = Matrix{T}(undef, length(x), N+1)
     # Eq. (4.2)
     for j = eachindex(x)
@@ -188,7 +211,7 @@ Return the value of `y(x)` given that `y(nodes(poly)) = y₀`. If the value of `
 is not provided, return a function `y(x)` that evaluates the interpolant at any
 `x`.
 """
-function interpolate(poly::AbstractPolynomial{N, T}, y₀::AbstractVector{<: Number}, x::Number) where {N, T}
+function interpolate(poly::AbstractPolynomial{T}, y₀::AbstractVector{<:Number}, x::Number) where {T}
     w = weights(poly)
     x₀ = nodes(poly)
     xx = convert(T, x)
@@ -196,6 +219,7 @@ function interpolate(poly::AbstractPolynomial{N, T}, y₀::AbstractVector{<: Num
     numer = zero(T)
     denom = zero(T)
     exact = 0
+    N = degree(poly)
     for j = Base.OneTo(N+1)
         xdiff = xx - x₀[j]
         temp = w[j] / xdiff
@@ -210,8 +234,9 @@ function interpolate(poly::AbstractPolynomial{N, T}, y₀::AbstractVector{<: Num
     end
 end
 
-interpolate(poly::AbstractPolynomial{N, T}, y₀::AbstractVector{<: Number}) where {N, T} = x -> interpolate(poly, y₀, x)
-interpolate(poly::AbstractPolynomial{N, T}, y₀::AbstractVector{<: Number}, x::AbstractVector{<: Number}) where {N, T} = [interpolate(poly, y₀, xᵢ) for xᵢ in x]
+# FIXME issue #11: these functions should compute the weights only once
+interpolate(poly::AbstractPolynomial, y₀::AbstractVector{<:Number}) = x -> interpolate(poly, y₀, x)
+interpolate(poly::AbstractPolynomial, y₀::AbstractVector{<:Number}, x::AbstractVector{<:Number}) = map(xᵢ -> interpolate(poly, y₀, xᵢ), x)
 
 """
     differentiation_matrix(poly::AbstractPolynomial)
@@ -223,10 +248,11 @@ Return the differentiation matrix at the nodes of the polynomial specified.
 
 Now dy/dx ≈ `D*y` at the nodes of the polynomial.
 """
-function differentiation_matrix(poly::AbstractPolynomial{N, T}) where {N, T}
+function differentiation_matrix(poly::AbstractPolynomial{T}) where {T}
     # Eqs. (9.4) and (9.5)
     w = weights(poly)
     x = nodes(poly)
+    N = degree(poly)
     D = Matrix{T}(undef, N+1, N+1)
     for i = Base.OneTo(N+1)
         Dsum = zero(T)
