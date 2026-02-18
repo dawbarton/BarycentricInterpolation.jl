@@ -79,8 +79,8 @@ degree(poly::AbstractPolynomial) = length(poly.nodes)-1 # assumes every poly has
 
 Return the nodes and weights of the polynomial specified.
 """
-function nodes_weights(poly::Type{<:AbstractPolynomial}, N::Integer, shift=0, scale=1)
-    return (nodes(poly, N, shift, scale), weights(poly, N))
+function nodes_weights(::Type{P}, N::Integer, shift=0, scale=1) where {P<:AbstractPolynomial}
+    return (nodes(P, N, shift, scale), weights(P, N))
 end
 
 nodes_weights(poly::AbstractPolynomial) = (poly.nodes, poly.weights)
@@ -105,9 +105,9 @@ an `AbstractPolynomial` type is passed, one must also pass the degree `N``.
 """
 function weights end
 
-function weights(poly::Type{<:AbstractPolynomial}, N::Integer)
+function weights(::Type{P}, N::Integer) where {P<:AbstractPolynomial}
     _N = Int(N)
-    return [_weight(poly, _N, j) for j = 0:_N]
+    return [_weight(P, _N, j) for j = 0:_N]
 end
 
 # Eq. (5.1)
@@ -146,9 +146,9 @@ function nodes end
 
 nodes(poly::Type{<:AbstractPolynomial{T}}, N::Integer) where {T} = nodes(poly, N, zero(T), one(T))
 
-function nodes(poly::Type{<:AbstractPolynomial}, N::Integer, shift::Number, scale::Number)
+function nodes(::Type{P}, N::Integer, shift::Number, scale::Number) where {P<:AbstractPolynomial}
     _N = Int(N)
-    return [_node(poly, _N, j)*scale + shift for j = 0:_N]
+    return [_node(P, _N, j)*scale + shift for j = 0:_N]
 end
 
 nodes(poly::Type{<:Equispaced}, N::Integer, shift::Number, scale::Number) = range(shift - scale, stop=shift + scale, length=Int(N)+1)
