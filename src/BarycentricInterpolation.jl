@@ -92,7 +92,7 @@ function nodes_weights(::Type{<:Legendre{T}}, N::Integer, shift=0, scale=1) wher
     end
     (x, w) = gausslegendre(N+1) # computes in Float64 precision
     nodes = map(xᵢ -> T(xᵢ * scale + shift), x)
-    weights = map(i -> (2*isodd(i)-1)*sqrt((1-x[i]^2)*w[i]), eachindex(x))
+    weights = map(i -> T((2*isodd(i)-1)*sqrt((1-x[i]^2)*w[i])), eachindex(x))
     return (nodes, weights)
 end
 
