@@ -18,27 +18,27 @@ general use interpolation package see
 
 ## Usage
 
-There are various types of polynomials defined based on the locations of their 
+There are various types of polynomials defined based on the locations of their
 nodes (zeros).
 
-* Equispaced (`Equispaced{N}()`) — a common choice when data is equispaced but
+* Equispaced (`Equispaced(N)`) — a common choice when data is equispaced but
   suffers from Runge phenomenon for high degree polynomials. When used as part
   of a collocation scheme with Gauss-Legendre collocation points, they provide
   the benefit of super-convergence. By default the nodes are equispaced over
   \[-1, +1\].
-* Chebyshev type 1 (`Chebyshev1{N}()`) — nodes distributed according to
+* Chebyshev type 1 (`Chebyshev1(N)`) — nodes distributed according to
   cos(π(2j + 1)/(2N + 2)) where N is the degree of the polynomial, for j in
   \[0, N\].
-* Chebyshev type 2 (`Chebyshev2{N}()`) — nodes distributed according to
+* Chebyshev type 2 (`Chebyshev2(N)`) — nodes distributed according to
   cos(πj/N) where N is the degree of the polynomial, for j in \[0, N\].
-* Legendre (`Legendre{N}()`) — nodes distributed according to the zeros of the
+* Legendre (`Legendre(N)`) — nodes distributed according to the zeros of the
   corresponding Legendre polynomial where N is the degree of the polynomial.
 * Arbitrary nodes (`ArbitraryPolynomial(nodes)`) — nodes distributed as
   specified.
 
 By default, each of the polynomials are defined over the range \[-1, +1\].
 This can be modified by specifying a start and stop for the range, e.g.,
-`Equispaced{10}(0, 1)` will generate a 10th order polynomial with equispaced
+`Equispaced(10, 0, 1)` will generate a 10th order polynomial with equispaced
 nodes over the range \[0, 1\].
 
 Polynomials with nodes asymptotically clustered towards the end points (such
@@ -67,7 +67,7 @@ derivative of `y`.
 ```julia
 using BarycentricInterpolation
 
-p = Chebyshev2{20}()           # create a Chebyshev type 2 polynomial of order 20
+p = Chebyshev2(20)             # create a Chebyshev type 2 polynomial of order 20
 x = nodes(p)                   # get the nodes
 y = sinpi.(x)                  # generate y values at the nodes
 x_new = rand()*2 -1            # a random number in [-1, +1]
