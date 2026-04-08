@@ -26,20 +26,25 @@ nodes (zeros).
   of a collocation scheme with Gauss-Legendre collocation points, they provide
   the benefit of super-convergence. By default the nodes are equispaced over
   \[-1, +1\].
-* Chebyshev type 1 (`Chebyshev1(N)`) — nodes distributed according to
-  cos(π(2j + 1)/(2N + 2)) where N is the degree of the polynomial, for j in
-  \[0, N\].
-* Chebyshev type 2 (`Chebyshev2(N)`) — nodes distributed according to
-  cos(πj/N) where N is the degree of the polynomial, for j in \[0, N\].
-* Legendre (`Legendre(N)`) — nodes distributed according to the zeros of the
-  corresponding Legendre polynomial where N is the degree of the polynomial.
+* Chebyshev type 1 (`Chebyshev1(N)`) — N+1 nodes at the roots of the
+  degree-(N+1) Chebyshev polynomial of the first kind T_{N+1}, distributed
+  according to cos(π(2j + 1)/(2N + 2)) for j in \[0, N\]. Here N is the
+  degree of the *interpolating* polynomial (not the degree of the Chebyshev
+  polynomial whose roots are used).
+* Chebyshev type 2 (`Chebyshev2(N)`) — N+1 nodes at the extrema of the
+  degree-N Chebyshev polynomial of the first kind T_N, distributed according
+  to cos(πj/N) for j in \[0, N\]. Here N is the degree of the *interpolating*
+  polynomial.
+* Legendre (`Legendre(N)`) — N+1 nodes at the zeros of the degree-(N+1)
+  Legendre polynomial P_{N+1}, where N is the degree of the *interpolating*
+  polynomial.
 * Arbitrary nodes (`ArbitraryPolynomial(nodes)`) — nodes distributed as
   specified.
 
 By default, each of the polynomials are defined over the range \[-1, +1\].
 This can be modified by specifying a start and stop for the range, e.g.,
-`Equispaced(10, 0, 1)` will generate a 10th order polynomial with equispaced
-nodes over the range \[0, 1\].
+`Equispaced(10, 0, 1)` will generate a degree-10 interpolating polynomial with
+equispaced nodes over the range \[0, 1\].
 
 Polynomials with nodes asymptotically clustered towards the end points (such
 as Chebyshev) are optimal for avoiding the Runge phenomenon (see Trefethen,
@@ -67,7 +72,7 @@ derivative of `y`.
 ```julia
 using BarycentricInterpolation
 
-p = Chebyshev2(20)             # create a Chebyshev type 2 polynomial of order 20
+p = Chebyshev2(20)             # create a degree-20 interpolant using Chebyshev type 2 nodes
 x = nodes(p)                   # get the nodes
 y = sinpi.(x)                  # generate y values at the nodes
 x_new = rand()*2 -1            # a random number in [-1, +1]
